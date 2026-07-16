@@ -161,8 +161,34 @@ def get_system_prompt(character_id):
     return char['prompt']
 
 
+@app.route('/api/debug', methods=['GET'])
+def debug():
+    """检查环境和API状态"""
+    key = GROQ_API_KEY
+    key_preview = key[:8] + '...' + key[-4:] if len(key) > 12 else '(empty)'
+    # 测试一下API连通性
+    try:
+        r = requests.post(GROQ_API_URL, json={
+            'model': 'llama-3.3-70b-versatile',
+            'messages': [{'role': 'user', 'content': 'hi'}],
+            'max_tokens': 5,
+        }, headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'}, timeout=10)
+        api_status = f'HTTP {r.status_code}'
+        if r.status_code == 200:
+            api_status += ' OK'
+        else:
+            api_status += ' ' + r.text[:200]
+    except Exception as e:
+        api_status = f'连接失败: {str(e)[:100]}'
+    return {
+        'key_preview': key_preview,
+        'key_length': len(key),
+        'api_status': api_status,
+        'personas_count': len(CHARACTERS),
+    }
+
+
 @app.route('/')
-def index():
     return send_from_directory('public', 'index.html')
 
 
@@ -229,8 +255,18 @@ def chat():
             yield 'data: [DONE]\n\n'
 
         except Exception as e:
-            print('API 错误:', str(e))
-            yield 'data: ' + json.dumps({'error': '好像网络有点问题，稍等一下再试试？'}, ensure_ascii=False) + '\n\n'
+            err_msg = str(e)
+            print('API 错误:', err_msg)
+            # 根据错误类型给出更有用的提示
+            if '401' in err_msg or 'Unauthorized' in err_msg:
+                user_msg = 'API Key 失效了，请联系管理员更新。'
+            elif '429' in err_msg or 'rate' in err_msg.lower():
+                user_msg = '请求太频繁了，稍等一下再试？'
+            elif 'timeout' in err_msg.lower():
+                user_msg = '响应超时，网络可能有点慢，稍后再试？'
+            else:
+                user_msg = f'出了点问题（{err_msg[:60]}），稍等再试？'
+            yield 'data: ' + json.dumps({'error': user_msg}, ensure_ascii=False) + '\n\n'
 
     return Response(generate(), mimetype='text/event-stream',
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
