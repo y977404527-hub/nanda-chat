@@ -18,6 +18,15 @@
       --radius: 18px;
       --sidebar-w: 240px;
     }
+    /* 各人格主题色 */
+    body[data-char="muchen"]   { --accent:#c9748a; --accent2:#b05c72; --bg:#fdf8f5; --bg3:#f5ede8; --border:#e8d8d0; }
+    body[data-char="luyan"]    { --accent:#6a8eae; --accent2:#4a6e8e; --bg:#f4f7fb; --bg3:#e8edf5; --border:#d0d8e8; }
+    body[data-char="gushen"]   { --accent:#5b8a72; --accent2:#3d6b56; --bg:#f4f9f6; --bg3:#e4f0ea; --border:#cce0d5; }
+    body[data-char="linye"]    { --accent:#7a9e5a; --accent2:#5a7e3a; --bg:#f6f9f3; --bg3:#eaf2e4; --border:#d2e5c8; }
+    body[data-char="xingchen"] { --accent:#8e72b8; --accent2:#6e52a0; --bg:#f7f5fb; --bg3:#ede8f5; --border:#d8d0ec; }
+    body[data-char="nanfeng"]  { --accent:#e09060; --accent2:#c07040; --bg:#fdf9f5; --bg3:#f5ece4; --border:#e8d8c8; }
+    body[data-char="jiangmo"]  { --accent:#a07850; --accent2:#805838; --bg:#faf7f4; --bg3:#f0e8e0; --border:#e0d0c0; }
+    body[data-char="hebai"]    { --accent:#c09060; --accent2:#a07040; --bg:#fdf9f4; --bg3:#f5ece0; --border:#e8d8c4; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -161,6 +170,60 @@
       padding: 24px 10px;
       line-height: 1.7;
     }
+
+    /* ─── 角色选择 ─── */
+    .char-section {
+      padding: 10px 10px 4px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .char-section-label {
+      font-size: 10px;
+      color: var(--text-sub);
+      letter-spacing: 0.08em;
+      padding: 0 4px 6px;
+      font-weight: 500;
+    }
+    .char-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 260px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding-bottom: 4px;
+    }
+    .char-list::-webkit-scrollbar { display: none; }
+    .char-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .char-item:hover { background: rgba(0,0,0,0.05); }
+    .char-item.active { background: rgba(0,0,0,0.07); }
+    .char-avatar-mini {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .char-avatar-mini img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+    .char-item-info { flex: 1; min-width: 0; }
+    .char-item-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .char-item-tag { font-size: 11px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ─── 主聊天区 ─── */
     .main {
@@ -814,11 +877,11 @@
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-avatar-row">
-      <div class="sidebar-avatar">
+      <div class="sidebar-avatar" id="sidebarCharAvatar">
         <img src="/avatar.jpg" alt="沐辰" onerror="this.parentElement.innerHTML='🌙'" />
       </div>
       <div>
-        <div class="sidebar-name">沐辰</div>
+        <div class="sidebar-name" id="sidebarCharName">沐辰</div>
         <div class="sidebar-sub">聊天记录</div>
       </div>
     </div>
@@ -826,6 +889,14 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       新建对话
     </button>
+  </div>
+
+  <!-- 角色选择 -->
+  <div class="char-section">
+    <div class="char-section-label">切换角色</div>
+    <div class="char-list" id="charList">
+      <!-- JS 动态生成 -->
+    </div>
   </div>
   <div class="sidebar-history" id="historyList">
     <div class="sidebar-empty">还没有聊天记录<br/>发消息后自动保存</div>
@@ -857,6 +928,7 @@
         <img src="/avatar.jpg" alt="沐辰" onerror="this.style.display='none'" />
       </div>
       <h2>嗨，我是沐辰，很高兴认识你</h2>
+      <p style="font-style:italic;color:var(--accent);margin-bottom:6px">嗯……有什么想说的，跟我说就好。</p>
       <p>有什么开心或不开心的，都可以跟我说<br/>我会认真听的</p>
 
       <div class="fun-section" style="margin-top:28px;">
@@ -935,7 +1007,153 @@
   let currentId    = null; // 当前会话 ID
   let isStreaming   = false;
 
-  // ─── LocalStorage 会话管理 ───────────────────────────────────
+  // ─── 角色配置（前端镜像） ─────────────────────────────────────
+  const CHARS = [
+    { id: 'muchen',   name: '沐辰',   tag: '温柔文学男大',   intro: '嗯……有什么想说的，跟我说就好。',               avatar: '/avatar.jpg',  emoji: '🌙' },
+    { id: 'luyan',    name: '陆言',   tag: '侦探·恐怖故事',  intro: '你敢听吗——有些故事，听完之后你会后悔今晚一个人。', avatar: '',             emoji: '🕵️' },
+    { id: 'gushen',   name: '顾深',   tag: '理性科技派',    intro: '用数据说话——情绪是噪声，逻辑才是答案。',           avatar: '',             emoji: '🔬' },
+    { id: 'linye',    name: '林野',   tag: '生物自然学',    intro: '你知道吗，每一棵树都在用根互相说话，只是我们听不懂。', avatar: '',            emoji: '🌿' },
+    { id: 'xingchen', name: '星辰',   tag: '占星神秘学',    intro: '你的上升星座是什么——不用说，我猜你月亮在水瓶。',    avatar: '',             emoji: '✨' },
+    { id: 'nanfeng',  name: '南风',   tag: '治愈心理系',    intro: '没关系，你不用解释——我大概已经懂你的意思了。',      avatar: '',             emoji: '🌊' },
+    { id: 'jiangmo',  name: '江墨',   tag: '旅行摄影师',    intro: '我在布拉格的一个下午想到你——不，我是说，想到这件事应该跟你说。', avatar: '', emoji: '📷' },
+    { id: 'hebai',    name: '贺白',   tag: '温暖厨师型',    intro: '你吃饭了吗——不是客套，我是认真在问。',            avatar: '',             emoji: '🍜' },
+  ];
+
+  let currentCharId = 'muchen';
+
+  function getCurrentChar() {
+    return CHARS.find(c => c.id === currentCharId) || CHARS[0];
+  }
+
+  function renderCharList() {
+    const list = document.getElementById('charList');
+    list.innerHTML = '';
+    CHARS.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'char-item' + (c.id === currentCharId ? ' active' : '');
+      item.onclick = () => switchCharacter(c.id);
+
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'char-avatar-mini';
+      if (c.avatar) {
+        const img = document.createElement('img');
+        img.src = c.avatar;
+        img.onerror = () => { avatarDiv.textContent = c.emoji; };
+        avatarDiv.appendChild(img);
+      } else {
+        avatarDiv.textContent = c.emoji;
+      }
+
+      item.innerHTML = `
+        <div class="char-item-info">
+          <div class="char-item-name">${c.name}</div>
+          <div class="char-item-tag">${c.tag}</div>
+        </div>
+      `;
+      item.insertBefore(avatarDiv, item.firstChild);
+      list.appendChild(item);
+    });
+  }
+
+  function switchCharacter(charId) {
+    if (charId === currentCharId) { closeSidebar(); return; }
+    currentCharId = charId;
+    const char = getCurrentChar();
+
+    // 更新 body 主题色
+    document.body.setAttribute('data-char', charId);
+
+    // 更新 header
+    updateHeader(char);
+
+    // 更新侧边栏顶部头像名字
+    const sidebarAvatar = document.getElementById('sidebarCharAvatar');
+    const sidebarName = document.getElementById('sidebarCharName');
+    if (sidebarAvatar) {
+      if (char.avatar) {
+        sidebarAvatar.innerHTML = `<img src="${char.avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='${char.emoji}'" />`;
+      } else {
+        sidebarAvatar.innerHTML = char.emoji;
+        sidebarAvatar.style.display = 'flex';
+        sidebarAvatar.style.alignItems = 'center';
+        sidebarAvatar.style.justifyContent = 'center';
+        sidebarAvatar.style.fontSize = '20px';
+      }
+    }
+    if (sidebarName) sidebarName.textContent = char.name;
+
+    renderCharList();
+    // 开启这个角色的新对话
+    newChatWithChar(char);
+    closeSidebar();
+  }
+
+  function updateHeader(char) {
+    // 更新 header 头像
+    const headerAvatar = document.querySelector('.header .avatar');
+    if (headerAvatar) {
+      if (char.avatar) {
+        headerAvatar.innerHTML = `<img src="${char.avatar}" alt="${char.name}" onerror="this.parentElement.innerHTML='${char.emoji}'" />`;
+      } else {
+        headerAvatar.innerHTML = `<span style="font-size:22px;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${char.emoji}</span>`;
+      }
+    }
+    // 更新名字和标签
+    const headerName = document.querySelector('.header-info h1');
+    const headerBadge = document.querySelector('.header-badge');
+    if (headerName) headerName.textContent = char.name;
+    if (headerBadge) headerBadge.textContent = '✦ ' + char.tag;
+  }
+
+  function newChatWithChar(char) {
+    saveCurrentSession();
+    currentId = 'session_' + Date.now();
+    chatHistory = [];
+    messagesEl.innerHTML = '';
+    buildWelcomeScreen(char);
+    suggestRow.innerHTML = '';
+    inputEl.value = '';
+    renderHistoryList();
+  }
+
+  function buildWelcomeScreen(char) {
+    const avatarHtml = char.avatar
+      ? `<img src="${char.avatar}" alt="${char.name}" onerror="this.style.display='none'" />`
+      : `<span style="font-size:38px;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${char.emoji}</span>`;
+
+    const w = document.createElement('div');
+    w.className = 'welcome';
+    w.id = 'welcome';
+    w.innerHTML = `
+      <div class="avatar-big">${avatarHtml}</div>
+      <h2>嗨，我是${char.name}</h2>
+      <p style="font-style:italic;color:var(--accent);margin-bottom:6px">${char.intro}</p>
+      <p>随时跟我说话吧</p>
+      <div class="fun-section" style="margin-top:28px;">
+        <div class="fun-section-title">✨ 想玩点什么</div>
+        <div class="fun-cards">
+          <div class="fun-card accent" onclick="playGame('riddle')"><div class="fun-card-icon">🎭</div><div class="fun-card-title">猜谜语</div><div class="fun-card-desc">我出一个，看你几秒能猜中</div></div>
+          <div class="fun-card" onclick="playGame('tarot')"><div class="fun-card-icon">🔮</div><div class="fun-card-title">今日塔罗</div><div class="fun-card-desc">抽一张牌，看看今天的运势</div></div>
+          <div class="fun-card" onclick="playGame('wouldyou')"><div class="fun-card-icon">💭</div><div class="fun-card-title">二选一</div><div class="fun-card-desc">很难选的那种，你来试试</div></div>
+          <div class="fun-card" onclick="playGame('personality')"><div class="fun-card-icon">🌸</div><div class="fun-card-title">性格测试</div><div class="fun-card-desc">几个问题，说说你是哪种人</div></div>
+          <div class="fun-card" onclick="openDrawModal()" style="grid-column:span 2;border-color:rgba(116,168,232,0.4);background:rgba(116,168,232,0.05)"><div class="fun-card-icon">🎨</div><div class="fun-card-title">你画我猜</div><div class="fun-card-desc">你画${char.name}猜，或者让${char.name}来画你来猜</div></div>
+        </div>
+        <div class="fun-section-title">💬 随便聊聊</div>
+        <div class="quick-tags">
+          <div class="quick-tag" onclick="sendQuick(this)">今天心情不太好</div>
+          <div class="quick-tag" onclick="sendQuick(this)">我最近喜欢上一个人</div>
+          <div class="quick-tag" onclick="sendQuick(this)">推荐一部好看的电影</div>
+          <div class="quick-tag" onclick="sendQuick(this)">我不知道自己想要什么</div>
+          <div class="quick-tag" onclick="sendQuick(this)">你觉得我是什么性格</div>
+          <div class="quick-tag" onclick="sendQuick(this)">陪我发会儿呆</div>
+          <div class="quick-tag" onclick="sendQuick(this)">讲个故事给我听</div>
+          <div class="quick-tag" onclick="sendQuick(this)">问我一个有趣的问题</div>
+        </div>
+      </div>
+    `;
+    messagesEl.appendChild(w);
+    welcomeEl = w;
+  } ───────────────────────────────────
   const STORAGE_KEY = 'nanda_sessions_v2';
 
   function loadSessions() {
@@ -1045,40 +1263,7 @@
     currentId = 'session_' + Date.now();
     chatHistory = [];
     messagesEl.innerHTML = '';
-    // 重建欢迎屏
-    const w = document.createElement('div');
-    w.className = 'welcome';
-    w.id = 'welcome';
-    w.innerHTML = `
-      <div class="avatar-big">
-        <img src="/avatar.jpg" alt="沐辰" onerror="this.style.display='none'" />
-      </div>
-      <h2>嗨，我是沐辰，很高兴认识你</h2>
-      <p>有什么开心或不开心的，都可以跟我说<br/>我会认真听的</p>
-      <div class="fun-section" style="margin-top:28px;">
-        <div class="fun-section-title">✨ 想玩点什么</div>
-        <div class="fun-cards">
-          <div class="fun-card accent" onclick="playGame('riddle')"><div class="fun-card-icon">🎭</div><div class="fun-card-title">猜谜语</div><div class="fun-card-desc">我出一个，看你几秒能猜中</div></div>
-          <div class="fun-card" onclick="playGame('tarot')"><div class="fun-card-icon">🔮</div><div class="fun-card-title">今日塔罗</div><div class="fun-card-desc">抽一张牌，看看今天的运势</div></div>
-          <div class="fun-card" onclick="playGame('wouldyou')"><div class="fun-card-icon">💭</div><div class="fun-card-title">二选一</div><div class="fun-card-desc">很难选的那种，你来试试</div></div>
-          <div class="fun-card" onclick="playGame('personality')"><div class="fun-card-icon">🌸</div><div class="fun-card-title">性格测试</div><div class="fun-card-desc">几个问题，说说你是哪种人</div></div>
-          <div class="fun-card" onclick="openDrawModal()" style="grid-column:span 2;border-color:rgba(116,168,232,0.4);background:rgba(116,168,232,0.05)"><div class="fun-card-icon">🎨</div><div class="fun-card-title">你画我猜</div><div class="fun-card-desc">你画沐辰猜，或者让沐辰来画你来猜</div></div>
-        </div>
-        <div class="fun-section-title">💬 随便聊聊</div>
-        <div class="quick-tags">
-          <div class="quick-tag" onclick="sendQuick(this)">今天心情不太好</div>
-          <div class="quick-tag" onclick="sendQuick(this)">我最近喜欢上一个人</div>
-          <div class="quick-tag" onclick="sendQuick(this)">推荐一部好看的电影</div>
-          <div class="quick-tag" onclick="sendQuick(this)">我不知道自己想要什么</div>
-          <div class="quick-tag" onclick="sendQuick(this)">你觉得我是什么性格</div>
-          <div class="quick-tag" onclick="sendQuick(this)">陪我发会儿呆</div>
-          <div class="quick-tag" onclick="sendQuick(this)">讲个故事给我听</div>
-          <div class="quick-tag" onclick="sendQuick(this)">问我一个有趣的问题</div>
-        </div>
-      </div>
-    `;
-    messagesEl.appendChild(w);
-    welcomeEl = w;
+    buildWelcomeScreen(getCurrentChar());
     suggestRow.innerHTML = '';
     inputEl.value = '';
     inputEl.focus();
@@ -1139,7 +1324,7 @@
       const resp = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages, character: currentCharId }),
       });
       const data = await resp.json();
       showSuggestions(data.suggestions || []);
@@ -1230,7 +1415,7 @@
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatHistory }),
+        body: JSON.stringify({ messages: chatHistory, character: currentCharId }),
       });
 
       if (!response.ok) throw new Error('请求失败');
@@ -1436,7 +1621,7 @@
       const resp = await fetch('/api/guess-drawing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageB64 }),
+        body: JSON.stringify({ image: imageB64, character: currentCharId }),
       });
       const data = await resp.json();
       const reply = data.reply || '这幅画有点抽象，再给我点提示？';
@@ -1496,7 +1681,7 @@
       const resp = await fetch('/api/ai-draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ difficulty: currentDiff }),
+        body: JSON.stringify({ difficulty: currentDiff, character: currentCharId }),
       });
       const data = await resp.json();
       currentAiAnswer = data.answer || '';
@@ -1565,7 +1750,7 @@
       const resp = await fetch('/api/check-guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer: currentAiAnswer, guess }),
+        body: JSON.stringify({ answer: currentAiAnswer, guess, character: currentCharId }),
       });
       const data = await resp.json();
       const reply = data.reply;
@@ -1629,8 +1814,10 @@
   }
 
   // ─── 初始化 ───────────────────────────────────────────────────
+  document.body.setAttribute('data-char', 'muchen');
+  renderCharList();
   renderHistoryList();
-  currentId = 'session_' + Date.now(); // 默认开启一个新会话
+  currentId = 'session_' + Date.now();
 </script>
 </body>
 </html>
