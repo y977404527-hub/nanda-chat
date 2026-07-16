@@ -189,6 +189,7 @@ def debug():
 
 
 @app.route('/')
+def index():
     return send_from_directory('public', 'index.html')
 
 
