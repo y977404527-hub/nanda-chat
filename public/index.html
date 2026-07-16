@@ -231,31 +231,59 @@
       color: var(--text);
     }
 
-    /* Typing indicator */
+    /* Typing indicator - 横排 */
     .typing {
       display: flex;
       align-items: center;
-      gap: 5px;
-      padding: 14px 16px;
+      gap: 6px;
+      padding: 12px 16px;
     }
     .typing span {
-      width: 7px;
-      height: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--accent);
-      animation: bounce 1.2s infinite;
+      animation: dotPulse 1.4s ease-in-out infinite;
+      flex-shrink: 0;
     }
     .typing span:nth-child(2) { animation-delay: 0.2s; }
     .typing span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-      40% { transform: translateY(-8px); opacity: 1; }
+    @keyframes dotPulse {
+      0%, 60%, 100% { transform: scale(0.7); opacity: 0.4; }
+      30% { transform: scale(1.1); opacity: 1; }
     }
     .think-text {
       color: var(--text-sub);
-      font-size: 14px;
-      font-style: italic;
+      font-size: 13px;
+      letter-spacing: 0.05em;
       animation: fadeInOut 1.6s ease-in-out infinite;
+      margin-left: 2px;
+    }
+    /* 思考时横向扫描线 */
+    .think-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+    .think-bar-track {
+      width: 80px;
+      height: 3px;
+      background: #f0dde5;
+      border-radius: 2px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .think-bar-fill {
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 2px;
+      animation: scanBar 1.4s ease-in-out infinite;
+    }
+    @keyframes scanBar {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
     }
     @keyframes fadeInOut {
       0%, 100% { opacity: 0.4; }
@@ -267,8 +295,41 @@
       background: rgba(255,249,246,0.95);
       backdrop-filter: blur(12px);
       border-top: 1px solid var(--border);
-      padding: 14px 16px;
+      padding: 10px 16px 14px;
       flex-shrink: 0;
+    }
+    /* 回复建议条 */
+    .suggest-row {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      max-width: 780px;
+      margin: 0 auto;
+      scrollbar-width: none;
+    }
+    .suggest-row::-webkit-scrollbar { display: none; }
+    .suggest-chip {
+      flex-shrink: 0;
+      background: #fff9f6;
+      border: 1.5px solid #f0dde5;
+      border-radius: 18px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #7a5060;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s;
+      animation: chipIn 0.25s ease;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .suggest-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(201,116,138,0.06);
     }
     .input-row {
       display: flex;
@@ -480,6 +541,7 @@
 </div>
 
 <div class="input-wrap">
+  <div class="suggest-row" id="suggestRow"></div>
   <div class="input-row">
     <textarea
       id="input"
@@ -538,7 +600,35 @@
     sendMessage();
   }
 
-  function scrollToBottom() {
+  const suggestRow = document.getElementById('suggestRow');
+
+  function showSuggestions(chips) {
+    suggestRow.innerHTML = '';
+    if (!chips || chips.length === 0) return;
+    chips.forEach(text => {
+      const chip = document.createElement('div');
+      chip.className = 'suggest-chip';
+      chip.textContent = text;
+      chip.onclick = () => {
+        inputEl.value = text;
+        suggestRow.innerHTML = '';
+        sendMessage();
+      };
+      suggestRow.appendChild(chip);
+    });
+  }
+
+  async function fetchSuggestions(messages) {
+    try {
+      const resp = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages }),
+      });
+      const data = await resp.json();
+      showSuggestions(data.suggestions || []);
+    } catch {}
+  }
     messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
   }
 
@@ -590,10 +680,14 @@
     const avatar = makeAiAvatar();
 
     const bubble = document.createElement('div');
-    bubble.className = 'bubble typing';
+
     if (phase === 'thinking') {
-      bubble.innerHTML = '<span class="think-text">沐辰在想…</span>';
+      // 横向扫描条 + 文字
+      bubble.className = 'bubble think-bar';
+      bubble.innerHTML = '<div class="think-bar-track"><div class="think-bar-fill"></div></div><span class="think-text">沐辰在想…</span>';
     } else {
+      // 三个点横排
+      bubble.className = 'bubble typing';
       bubble.innerHTML = '<span></span><span></span><span></span>';
     }
 
@@ -612,6 +706,7 @@
     sendBtn.disabled = true;
     inputEl.value = '';
     inputEl.style.height = 'auto';
+    suggestRow.innerHTML = ''; // 发送时清空建议
 
     addMessage('user', text);
     history.push({ role: 'user', content: text });
@@ -683,7 +778,11 @@
       // 等待渲染队列清空
       while (charQueue.length > 0 || rendering) await sleep(50);
 
-      if (aiText) history.push({ role: 'assistant', content: aiText });
+      if (aiText) {
+        history.push({ role: 'assistant', content: aiText });
+        // 异步获取回复建议（不阻塞主流程）
+        fetchSuggestions(history);
+      }
 
     } catch (err) {
       typingRow.remove();
