@@ -459,6 +459,31 @@
     .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
     .send-btn svg { width: 18px; height: 18px; fill: white; }
 
+    /* 画笔按钮 */
+    .draw-trigger-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: #fff9f6;
+      border: 1.5px solid #f0dde5;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .draw-trigger-btn:hover { border-color: var(--accent); background: rgba(201,116,138,0.08); transform: scale(1.05); }
+    .draw-trigger-btn:active { transform: scale(0.95); }
+
+    /* 聊天里的图片气泡 */
+    .bubble-img {
+      max-width: 220px;
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+      border: 1px solid #f0dde5;
+    }
+
     .input-hint {
       text-align: center;
       font-size: 11px;
@@ -882,6 +907,7 @@
   <div class="input-wrap">
     <div class="suggest-row" id="suggestRow"></div>
     <div class="input-row">
+      <button class="draw-trigger-btn" onclick="openDrawModal()" title="你画我猜">🎨</button>
       <textarea
         id="input"
         placeholder="跟沐辰说说..."
@@ -1364,16 +1390,48 @@
     drawCtx.putImageData(undoStack.pop(), 0, 0);
   }
 
+  // 在聊天里添加图片气泡（用户发的画）
+  function addImageMessage(dataUrl) {
+    if (welcomeEl) { welcomeEl.remove(); welcomeEl = null; }
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🙋';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.style.padding = '6px';
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.className = 'bubble-img';
+    img.alt = '我画的画';
+    bubble.appendChild(img);
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    scrollToBottom();
+  }
+
   async function submitDrawing() {
     if (!drawCanvas) return;
     const btn = document.getElementById('submitDrawBtn');
     btn.disabled = true;
     btn.textContent = '沐辰在看…';
-    const replyEl = document.getElementById('aiGuessReply');
-    replyEl.style.display = '';
-    replyEl.textContent = '沐辰在认真看你的画…';
 
     const imageB64 = drawCanvas.toDataURL('image/png');
+
+    // 1. 关闭弹窗，图片发到聊天
+    closeDrawModal();
+    addImageMessage(imageB64);
+    chatHistory.push({ role: 'user', content: '我刚给你画了一幅画，猜猜是什么？（图片内容见上）' });
+
+    // 2. 显示思考动效
+    const thinkingRow = addTyping('thinking');
+    await sleep(1200 + Math.random() * 800);
+    thinkingRow.remove();
+
+    const typingRow = addTyping('typing');
+
     try {
       const resp = await fetch('/api/guess-drawing', {
         method: 'POST',
@@ -1382,22 +1440,29 @@
       });
       const data = await resp.json();
       const reply = data.reply || '这幅画有点抽象，再给我点提示？';
-      replyEl.textContent = reply;
 
-      // 发到主聊天，然后关弹窗继续聊
-      setTimeout(() => {
-        closeDrawModal();
-        // 把游戏结果注入对话
-        addMessage('user', '[你画我猜] 我画了一幅画，让沐辰来猜~');
-        chatHistory.push({ role: 'user', content: '我刚画了一幅画给你看，你来猜猜是什么？' });
-        addMessage('ai', reply);
-        chatHistory.push({ role: 'assistant', content: reply });
-        saveCurrentSession();
-        fetchSuggestions(chatHistory);
-      }, 1200);
+      typingRow.remove();
+
+      // 3. 打字动效打出 AI 猜测
+      const bubble = addMessage('ai', '');
+      let aiText = '';
+      let charQueue = [...reply];
+      for (const ch of charQueue) {
+        aiText += ch;
+        bubble.textContent = aiText;
+        scrollToBottom();
+        const isPunct = '，。！？…、'.includes(ch);
+        await sleep(isPunct ? 80 + Math.random() * 100 : 25 + Math.random() * 30);
+      }
+
+      chatHistory.push({ role: 'assistant', content: reply });
+      saveCurrentSession();
+      fetchSuggestions(chatHistory);
     } catch {
-      replyEl.textContent = '好像出了点问题，再试一次？';
+      typingRow.remove();
+      addMessage('ai', '好像出了点问题，再试一次？');
     }
+
     btn.disabled = false;
     btn.textContent = '让沐辰猜！';
   }
@@ -1444,8 +1509,39 @@
       document.getElementById('revealBtn').style.display = '';
       document.getElementById('guessReply').style.display = 'none';
 
-      // 把"AI出画"这件事发到主聊天
-      addMessage('ai', drawing + '\n' + prompt);
+      // emoji画 + 邀请语 发到主聊天（用大字气泡）
+      if (welcomeEl) { welcomeEl.remove(); welcomeEl = null; }
+      const row = document.createElement('div');
+      row.className = 'msg-row ai';
+      const avatar = makeAiAvatar();
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.style.fontSize = '32px';
+      bubble.style.lineHeight = '1.5';
+      bubble.style.letterSpacing = '4px';
+      bubble.textContent = drawing;
+      const promptBubble = document.createElement('div');
+      promptBubble.className = 'bubble';
+      promptBubble.style.marginTop = '4px';
+      promptBubble.textContent = '';
+      row.appendChild(avatar);
+      const msgCol = document.createElement('div');
+      msgCol.style.display = 'flex';
+      msgCol.style.flexDirection = 'column';
+      msgCol.style.gap = '4px';
+      msgCol.appendChild(bubble);
+      msgCol.appendChild(promptBubble);
+      row.appendChild(msgCol);
+      messagesEl.appendChild(row);
+      scrollToBottom();
+
+      // 打字动效打出邀请语
+      for (const ch of prompt) {
+        promptBubble.textContent += ch;
+        scrollToBottom();
+        await sleep(30 + Math.random() * 30);
+      }
+
       chatHistory.push({ role: 'assistant', content: drawing + '\n' + prompt });
       saveCurrentSession();
 
@@ -1463,7 +1559,7 @@
     const replyEl = document.getElementById('guessReply');
     replyEl.style.display = '';
     replyEl.className = 'guess-reply';
-    replyEl.textContent = '沐辰在想你猜的对不对…';
+    replyEl.textContent = '沐辰在判断…';
 
     try {
       const resp = await fetch('/api/check-guess', {
@@ -1474,42 +1570,62 @@
       const data = await resp.json();
       const reply = data.reply;
       replyEl.textContent = reply;
-      if (data.correct) {
-        replyEl.classList.add('correct');
-        document.getElementById('revealBtn').style.display = 'none';
+      if (data.correct) replyEl.classList.add('correct');
+
+      // 关弹窗，猜测 + 回应进主聊天（打字动效）
+      closeDrawModal();
+      addMessage('user', `我猜是：${guess}`);
+      chatHistory.push({ role: 'user', content: `我猜是：${guess}` });
+
+      const thinkRow = addTyping('thinking');
+      await sleep(800 + Math.random() * 600);
+      thinkRow.remove();
+      const typRow = addTyping('typing');
+      await sleep(300);
+      typRow.remove();
+
+      const bubble = addMessage('ai', '');
+      let aiText = '';
+      for (const ch of reply) {
+        aiText += ch;
+        bubble.textContent = aiText;
+        scrollToBottom();
+        const isPunct = '，。！？…、'.includes(ch);
+        await sleep(isPunct ? 80 + Math.random() * 100 : 25 + Math.random() * 30);
       }
 
-      // 把猜测和结果都发进主聊天，关弹窗继续聊
-      setTimeout(() => {
-        closeDrawModal();
-        addMessage('user', `我猜是：${guess}`);
-        chatHistory.push({ role: 'user', content: `我猜是：${guess}` });
-        addMessage('ai', reply);
-        chatHistory.push({ role: 'assistant', content: reply });
-        saveCurrentSession();
-        fetchSuggestions(chatHistory);
-      }, 1000);
+      chatHistory.push({ role: 'assistant', content: reply });
+      saveCurrentSession();
+      fetchSuggestions(chatHistory);
     } catch {
       replyEl.textContent = '出了点问题，再试试？';
     }
   }
 
-  function revealAnswer() {
+  async function revealAnswer() {
     const answer = currentAiAnswer;
-    const msg = `答案揭晓……是${answer}，你猜出来了吗？`;
+    const msg = `答案揭晓……是「${answer}」，你猜出来了吗？`;
     document.getElementById('guessReply').style.display = '';
     document.getElementById('guessReply').className = 'guess-reply';
     document.getElementById('guessReply').textContent = msg;
     document.getElementById('revealBtn').style.display = 'none';
 
-    // 同样流入主聊天
-    setTimeout(() => {
-      closeDrawModal();
-      addMessage('ai', msg);
-      chatHistory.push({ role: 'assistant', content: msg });
-      saveCurrentSession();
-      fetchSuggestions(chatHistory);
-    }, 900);
+    closeDrawModal();
+    const typRow = addTyping('typing');
+    await sleep(500);
+    typRow.remove();
+
+    const bubble = addMessage('ai', '');
+    let aiText = '';
+    for (const ch of msg) {
+      aiText += ch;
+      bubble.textContent = aiText;
+      scrollToBottom();
+      await sleep(30 + Math.random() * 30);
+    }
+    chatHistory.push({ role: 'assistant', content: msg });
+    saveCurrentSession();
+    fetchSuggestions(chatHistory);
   }
 
   // ─── 初始化 ───────────────────────────────────────────────────
