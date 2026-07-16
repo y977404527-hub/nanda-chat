@@ -1,30 +1,53 @@
-# 哥们儿 - 男大 AI 聊天室
+# 沐辰 · 男大聊天室 🌙
 
-一个幽默接地气的男大学生风格 AI 聊天网站，基于 Groq 免费 API + Llama 3.3 70B。
+一个让女生真心喜欢聊天的 AI 男大学生网站。
 
-## 快速启动
+---
 
-### 1. 获取免费 Groq API Key
-1. 访问 https://console.groq.com
-2. 注册账号（完全免费）
-3. 创建 API Key
+## 🚀 免费部署（让所有人都能访问）
 
-### 2. 配置环境变量
-编辑 `.env` 文件，填入你的 Key：
-```
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxx
-```
+### 方法一：Render.com（推荐，免费）
 
-### 3. 安装依赖并启动
+**第一步：上传代码到 GitHub**
+1. 打开 https://github.com → 新建仓库（名字随意，如 `nanda-chat`）
+2. 按 GitHub 提示的命令上传代码：
+   ```bash
+   cd /Users/manyou/nanda-chat
+   git remote add origin https://github.com/你的用户名/nanda-chat.git
+   git push -u origin main
+   ```
+
+**第二步：在 Render 部署**
+1. 打开 https://render.com → 注册/登录（支持 GitHub 直接登录）
+2. 点击 **New → Web Service**
+3. 选择刚才的 GitHub 仓库
+4. 配置如下：
+   - Name: `nanda-chat`（随意）
+   - Runtime: `Python 3`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn server:app --bind 0.0.0.0:$PORT`
+5. 展开 **Environment Variables**，添加：
+   - Key: `GROQ_API_KEY`
+   - Value: `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`
+6. 点击 **Create Web Service**
+7. 等 2~3 分钟部署完成，会得到一个 `https://xxxx.onrender.com` 的链接
+8. **把这个链接发给任何人，全球都能访问！**
+
+---
+
+### 方法二：本地运行（仅自己电脑）
+
 ```bash
+cd /Users/manyou/nanda-chat
 pip3 install -r requirements.txt
-python3 server.py
+PORT=3100 python3 server.py
 ```
+浏览器打开 http://localhost:3100
 
-浏览器打开 http://localhost:3000 即可开聊！
+---
 
 ## 技术栈
-- 后端：Python + Flask
-- AI：Groq API（免费）+ Llama 3.3 70B
-- 前端：原生 HTML/CSS/JS，暗黑风 UI
-- 流式输出：SSE（Server-Sent Events）
+- 后端：Python Flask + Gunicorn
+- AI：Groq 免费 API（Llama 3.3 70B）
+- 前端：原生 HTML/CSS，奶茶粉系 UI
+- 流式输出：SSE 打字机效果
