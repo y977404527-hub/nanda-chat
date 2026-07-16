@@ -190,6 +190,178 @@ def suggest():
     return {'suggestions': []}, 200
 
 
+@app.route('/api/guess-drawing', methods=['POST'])
+def guess_drawing():
+    """你画我猜：接收 base64 图片，让 AI 用沐辰语气猜出内容"""
+    data = request.get_json()
+    image_b64 = data.get('image', '')  # data:image/png;base64,xxx
+
+    if not image_b64:
+        return {'error': '没有图片'}, 400
+
+    try:
+        payload = {
+            'model': 'meta-llama/llama-4-scout-17b-16e-instruct',
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': [
+                        {
+                            'type': 'image_url',
+                            'image_url': {'url': image_b64}
+                        },
+                        {
+                            'type': 'text',
+                            'text': (
+                                '你是沐辰，一个温柔帅气的男大学生，正在和女生玩"你画我猜"游戏。'
+                                '女生刚刚画了一幅画，你来猜这幅画画的是什么。\n'
+                                '要求：\n'
+                                '1. 用沐辰的语气说话：简短、克制、偶尔有点撩\n'
+                                '2. 先给出你猜的答案（加粗或直接说），再说一两句有趣的反应\n'
+                                '3. 如果画得很抽象或看不清，就调侃一下，但不要嘲笑\n'
+                                '4. 如果画面是空白的，说"你还没开始画呢"\n'
+                                '5. 回复控制在50字以内，轻松有趣\n'
+                                '示例风格："是……猫吗？画得很可爱，我觉得你画画的时候一定很认真。"'
+                            )
+                        }
+                    ]
+                }
+            ],
+            'max_tokens': 200,
+            'temperature': 0.85,
+        }
+        headers = {
+            'Authorization': 'Bearer ' + GROQ_API_KEY,
+            'Content-Type': 'application/json',
+        }
+        resp = requests.post(
+            GROQ_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        reply = result['choices'][0]['message']['content'].strip()
+        return {'reply': reply}
+    except Exception as e:
+        print('guess-drawing 错误:', str(e))
+        return {'reply': '让我想想……这幅画有点抽象，再给我点提示？'}, 200
+
+
+@app.route('/api/ai-draw', methods=['POST'])
+def ai_draw():
+    """沐辰画，用户猜：AI 生成 emoji 画 + 答案（先隐藏）"""
+    data = request.get_json()
+    difficulty = data.get('difficulty', 'easy')  # easy / hard
+
+    diff_prompt = {
+        'easy': '简单的、生活中常见的事物，例如：动物、食物、日常物品',
+        'hard': '稍微抽象一点的概念或情感，例如：下雨天、想家、睡懒觉',
+    }.get(difficulty, '简单的日常事物')
+
+    try:
+        payload = {
+            'model': 'llama-3.3-70b-versatile',
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': (
+                        f'你正在玩"你画我猜"，现在你来"画"，用户来猜。\n'
+                        f'主题范围：{diff_prompt}\n\n'
+                        '请完成以下任务：\n'
+                        '1. 随机选一个词语作为谜底\n'
+                        '2. 用 emoji 组合来"画"出这个词（不能用文字描述，只用 emoji，5~15个）\n'
+                        '3. 用沐辰的语气写一句话邀请用户来猜（不透露答案）\n\n'
+                        '严格按照以下 JSON 格式输出，不要输出其他任何内容：\n'
+                        '{"answer": "谜底词语", "drawing": "emoji画", "prompt": "邀请用户猜的一句话"}'
+                    )
+                }
+            ],
+            'max_tokens': 200,
+            'temperature': 0.95,
+        }
+        headers = {
+            'Authorization': 'Bearer ' + GROQ_API_KEY,
+            'Content-Type': 'application/json',
+        }
+        resp = requests.post(
+            GROQ_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=20,
+        )
+        resp.raise_for_status()
+        raw = resp.json()['choices'][0]['message']['content'].strip()
+        # 提取 JSON
+        import re
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if m:
+            result = json.loads(m.group())
+            return {
+                'answer': result.get('answer', ''),
+                'drawing': result.get('drawing', '🎨'),
+                'prompt': result.get('prompt', '你猜猜看，我画的是什么？'),
+            }
+    except Exception as e:
+        print('ai-draw 错误:', str(e))
+
+    return {
+        'answer': '猫',
+        'drawing': '🐱🐾🧶',
+        'prompt': '猜猜看，我画的是什么？',
+    }, 200
+
+
+@app.route('/api/check-guess', methods=['POST'])
+def check_guess():
+    """判断用户猜测是否正确，用沐辰语气回应"""
+    data = request.get_json()
+    answer = data.get('answer', '')
+    guess = data.get('guess', '')
+
+    if not answer or not guess:
+        return {'correct': False, 'reply': '你还没猜呢'}, 200
+
+    # 简单判断：猜测内容包含答案（或接近）
+    correct = answer in guess or guess in answer
+
+    try:
+        payload = {
+            'model': 'llama-3.3-70b-versatile',
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': (
+                        f'你是沐辰，正在和女生玩你画我猜。\n'
+                        f'你画的谜底是：{answer}\n'
+                        f'她猜的是：{guess}\n'
+                        f'猜对了吗：{"猜对了" if correct else "没猜对"}\n\n'
+                        '用沐辰的语气（简短克制、偶尔撩、不用感叹号）回应她这次猜测。'
+                        '如果猜对了表示赞赏，如果猜错了给一个小提示，不直接说答案。'
+                        '控制在40字以内。'
+                    )
+                }
+            ],
+            'max_tokens': 150,
+            'temperature': 0.85,
+        }
+        headers = {
+            'Authorization': 'Bearer ' + GROQ_API_KEY,
+            'Content-Type': 'application/json',
+        }
+        resp = requests.post(GROQ_API_URL, json=payload, headers=headers, timeout=15)
+        resp.raise_for_status()
+        reply = resp.json()['choices'][0]['message']['content'].strip()
+        return {'correct': correct, 'reply': reply}
+    except Exception as e:
+        print('check-guess 错误:', str(e))
+        if correct:
+            return {'correct': True, 'reply': f'嗯，猜对了，就是{answer}。'}, 200
+        else:
+            return {'correct': False, 'reply': '再想想，还差一点。'}, 200
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3000))
     print('男大聊天服务器启动在 http://localhost:' + str(port))
