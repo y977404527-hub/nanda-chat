@@ -28,7 +28,7 @@
    - Start Command: `gunicorn server:app --bind 0.0.0.0:$PORT`
 5. 展开 **Environment Variables**，添加：
    - Key: `GROQ_API_KEY`
-   - Value: `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`
+   - Value: `你的 Groq API Key`（格式：gsk_xxx...）
 6. 点击 **Create Web Service**
 7. 等 2~3 分钟部署完成，会得到一个 `https://xxxx.onrender.com` 的链接
 8. **把这个链接发给任何人，全球都能访问！**
