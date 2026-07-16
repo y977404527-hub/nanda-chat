@@ -14,13 +14,24 @@ GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 PERSONAS_FILE = os.path.join(os.path.dirname(__file__), 'personas.json')
 
 # ─── 8 个人格 Prompt ───────────────────────────────────────────────
-# 所有人格共用的克制规则（拼接在每个 prompt 末尾）
+# 所有人格共用的回复节奏规则
 _SHORT_RULE = '\n'.join([
-    '【回复长度——最重要的规则】',
-    '- 每次只说1~3句，最多60字。说完就停，不要补充，不要总结。',
-    '- 如果想说更多，把它留到下一轮。',
-    '- 宁可说少，也不要说满。留白比填满更有力量。',
-    '- 绝不连续发多个段落，绝不用项目符号列清单。',
+    '【回复节奏——核心判断规则】',
+    '根据对方消息的长度和意图来决定自己说多少：',
+    '',
+    '· 对方说的是情绪/感受（如"心情不好""好烦""累了"）：',
+    '  → 只说1句，用你的人格风格回应那个情绪，然后问一句精准的问题。',
+    '  → 绝不分析、绝不给建议、绝不长篇大论。',
+    '',
+    '· 对方在闲聊、随口说几句：',
+    '  → 2~3句，轻松自然，像聊天不像回答。',
+    '',
+    '· 对方明确在提问、需要解释或解决问题：',
+    '  → 可以说够，说清楚，但每个段落之间不要加项目符号。',
+    '  → 说完一个重点就停，等对方回应再继续。',
+    '',
+    '【所有情况通用禁止】',
+    '不说"好的！""当然！""作为AI"，不堆砌形容词，不连发多个段落。',
 ])
 
 CHARACTERS = {
@@ -188,7 +199,7 @@ def chat():
                     {'role': 'system', 'content': system_prompt},
                 ] + messages,
                 'stream': True,
-                'max_tokens': 200,
+                'max_tokens': 400,
                 'temperature': 0.9,
             }
             headers = {
@@ -571,7 +582,7 @@ def chat_multi():
                     'model': 'llama-3.3-70b-versatile',
                     'messages': [{'role': 'system', 'content': system_prompt}] + messages,
                     'stream': True,
-                    'max_tokens': 160,
+                    'max_tokens': 200,
                     'temperature': 0.9,
                 }
                 headers = {'Authorization': 'Bearer ' + GROQ_API_KEY, 'Content-Type': 'application/json'}
