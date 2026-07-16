@@ -1381,7 +1381,20 @@
         body: JSON.stringify({ image: imageB64 }),
       });
       const data = await resp.json();
-      replyEl.textContent = data.reply || '这幅画有点抽象，再给我点提示？';
+      const reply = data.reply || '这幅画有点抽象，再给我点提示？';
+      replyEl.textContent = reply;
+
+      // 发到主聊天，然后关弹窗继续聊
+      setTimeout(() => {
+        closeDrawModal();
+        // 把游戏结果注入对话
+        addMessage('user', '[你画我猜] 我画了一幅画，让沐辰来猜~');
+        chatHistory.push({ role: 'user', content: '我刚画了一幅画给你看，你来猜猜是什么？' });
+        addMessage('ai', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+        saveCurrentSession();
+        fetchSuggestions(chatHistory);
+      }, 1200);
     } catch {
       replyEl.textContent = '好像出了点问题，再试一次？';
     }
@@ -1422,11 +1435,20 @@
       });
       const data = await resp.json();
       currentAiAnswer = data.answer || '';
-      document.getElementById('aiDrawingEmoji').textContent = data.drawing || '🎨';
-      document.getElementById('aiDrawPrompt').textContent = data.prompt || '猜猜看，我画的是什么？';
+      const drawing = data.drawing || '🎨';
+      const prompt = data.prompt || '猜猜看，我画的是什么？';
+
+      document.getElementById('aiDrawingEmoji').textContent = drawing;
+      document.getElementById('aiDrawPrompt').textContent = prompt;
       document.getElementById('guessInputRow').style.display = 'flex';
       document.getElementById('revealBtn').style.display = '';
       document.getElementById('guessReply').style.display = 'none';
+
+      // 把"AI出画"这件事发到主聊天
+      addMessage('ai', drawing + '\n' + prompt);
+      chatHistory.push({ role: 'assistant', content: drawing + '\n' + prompt });
+      saveCurrentSession();
+
       setTimeout(() => document.getElementById('guessInput')?.focus(), 100);
     } catch {
       document.getElementById('aiDrawPrompt').textContent = '好像出了点问题，再试一次？';
@@ -1450,22 +1472,44 @@
         body: JSON.stringify({ answer: currentAiAnswer, guess }),
       });
       const data = await resp.json();
-      replyEl.textContent = data.reply;
+      const reply = data.reply;
+      replyEl.textContent = reply;
       if (data.correct) {
         replyEl.classList.add('correct');
         document.getElementById('revealBtn').style.display = 'none';
       }
+
+      // 把猜测和结果都发进主聊天，关弹窗继续聊
+      setTimeout(() => {
+        closeDrawModal();
+        addMessage('user', `我猜是：${guess}`);
+        chatHistory.push({ role: 'user', content: `我猜是：${guess}` });
+        addMessage('ai', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+        saveCurrentSession();
+        fetchSuggestions(chatHistory);
+      }, 1000);
     } catch {
       replyEl.textContent = '出了点问题，再试试？';
     }
   }
 
   function revealAnswer() {
-    const replyEl = document.getElementById('guessReply');
-    replyEl.style.display = '';
-    replyEl.className = 'guess-reply';
-    replyEl.textContent = `答案是：${currentAiAnswer}`;
+    const answer = currentAiAnswer;
+    const msg = `答案揭晓……是${answer}，你猜出来了吗？`;
+    document.getElementById('guessReply').style.display = '';
+    document.getElementById('guessReply').className = 'guess-reply';
+    document.getElementById('guessReply').textContent = msg;
     document.getElementById('revealBtn').style.display = 'none';
+
+    // 同样流入主聊天
+    setTimeout(() => {
+      closeDrawModal();
+      addMessage('ai', msg);
+      chatHistory.push({ role: 'assistant', content: msg });
+      saveCurrentSession();
+      fetchSuggestions(chatHistory);
+    }, 900);
   }
 
   // ─── 初始化 ───────────────────────────────────────────────────
