@@ -281,14 +281,76 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .header-badge {
       margin-left: auto;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .header-badge-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
       background: linear-gradient(135deg, #fde8ec, #f5d5df);
       border: 1px solid rgba(201,116,138,0.3);
       border-radius: 20px;
-      padding: 4px 11px;
+      padding: 5px 12px;
       font-size: 11px;
       color: #b05c72;
       font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: all 0.15s;
     }
+    .header-badge-btn:hover { background: linear-gradient(135deg, #fbd4dc, #f0c8d5); }
+    .header-badge-btn .badge-arrow { font-size: 9px; opacity: 0.7; transition: transform 0.15s; }
+    .header-badge-btn.open .badge-arrow { transform: rotate(180deg); }
+    /* 下拉人格列表 */
+    .persona-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: var(--bg2, #fff9f6);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+      min-width: 180px;
+      max-height: 320px;
+      overflow-y: auto;
+      z-index: 200;
+      padding: 6px;
+      scrollbar-width: none;
+    }
+    .persona-dropdown::-webkit-scrollbar { display: none; }
+    .persona-dropdown.open { display: block; }
+    .persona-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .persona-dropdown-item:hover { background: var(--bg3); }
+    .persona-dropdown-item.active { background: var(--accent-glow, rgba(201,116,138,0.12)); color: var(--accent); font-weight: 600; }
+    .persona-dropdown-item .pd-emoji { font-size: 15px; flex-shrink: 0; }
+    .persona-dropdown-item .pd-info { flex: 1; min-width: 0; }
+    .persona-dropdown-item .pd-name { font-weight: 600; font-size: 12px; }
+    .persona-dropdown-item .pd-tag { font-size: 11px; color: var(--text-sub); }
+    .persona-dropdown-item .pd-edit { opacity: 0; font-size: 11px; color: var(--text-sub); flex-shrink: 0; padding: 2px 4px; border-radius: 4px; }
+    .persona-dropdown-item:hover .pd-edit { opacity: 1; }
+    .persona-dropdown-item .pd-edit:hover { color: var(--accent); background: var(--accent-glow); }
+    .persona-dropdown-sep { height: 1px; background: var(--border); margin: 5px 4px; }
+    .persona-dropdown-add {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 10px; border-radius: 9px;
+      cursor: pointer; font-size: 12px;
+      color: var(--text-sub); transition: all 0.12s;
+    }
+    .persona-dropdown-add:hover { background: var(--bg3); color: var(--accent); }
 
     /* 群聊活跃角色栏 */
     .group-bar {
@@ -1170,7 +1232,15 @@
         在线 · 随时陪你聊
       </div>
     </div>
-    <div class="header-badge">✦ 温柔男大</div>
+    <div class="header-badge">
+      <button class="header-badge-btn" id="headerBadgeBtn" onclick="togglePersonaDropdown()">
+        <span id="headerBadgeText">✦ 温柔文艺</span>
+        <span class="badge-arrow">▼</span>
+      </button>
+      <div class="persona-dropdown" id="personaDropdown">
+        <!-- JS 动态生成 -->
+      </div>
+    </div>
   </div>
 
   <!-- 群聊活跃角色栏 -->
@@ -1266,7 +1336,7 @@
 
   // ─── 角色配置（前端镜像） ─────────────────────────────────────
   const CHARS = [
-    { id: 'muchen',   name: '沐辰',   tag: '温柔文学',   intro: '嗯……有什么想说的，跟我说就好。',               avatar: '/avatar.jpg',  emoji: '🌙' },
+    { id: 'muchen',   name: '沐辰',   tag: '温柔文艺',   intro: '嗯……有什么想说的，跟我说就好。',               avatar: '/avatar.jpg',  emoji: '🌙' },
     { id: 'luyan',    name: '陆言',   tag: '侦探·恐怖故事',  intro: '你敢听吗——有些故事，听完之后你会后悔今晚一个人。', avatar: '',             emoji: '🕵️' },
     { id: 'gushen',   name: '顾深',   tag: '理性科技派',    intro: '用数据说话——情绪是噪声，逻辑才是答案。',           avatar: '',             emoji: '🔬' },
     { id: 'linye',    name: '林野',   tag: '生物自然学',    intro: '你知道吗，每一棵树都在用根互相说话，只是我们听不懂。', avatar: '',            emoji: '🌿' },
@@ -1452,10 +1522,89 @@
     }
     // 更新名字和标签
     const headerName = document.querySelector('.header-info h1');
-    const headerBadge = document.querySelector('.header-badge');
+    const headerBadge = document.getElementById('headerBadgeText');
     if (headerName) headerName.textContent = char.name;
-    if (headerBadge) headerBadge.textContent = '✦ ' + char.tag;
+    if (headerBadge) headerBadge.textContent = `✦ ${char.tag || char.name}`;
+    // 刷新下拉列表
+    renderPersonaDropdown();
   }
+
+  // ─── 右上角人格下拉 ──────────────────────────────────────────
+  function renderPersonaDropdown() {
+    const dd = document.getElementById('personaDropdown');
+    if (!dd) return;
+    dd.innerHTML = '';
+    CHARS.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'persona-dropdown-item' + (c.id === currentCharId ? ' active' : '');
+
+      const emojiSpan = document.createElement('span');
+      emojiSpan.className = 'pd-emoji';
+      if (c.avatar) {
+        const img = document.createElement('img');
+        img.src = c.avatar;
+        img.style.cssText = 'width:18px;height:18px;border-radius:50%;object-fit:cover;vertical-align:middle';
+        img.onerror = () => { emojiSpan.textContent = c.emoji; };
+        emojiSpan.appendChild(img);
+      } else {
+        emojiSpan.textContent = c.emoji;
+      }
+
+      const info = document.createElement('div');
+      info.className = 'pd-info';
+      info.innerHTML = `<div class="pd-name">${c.name}</div><div class="pd-tag">${c.tag}</div>`;
+
+      const editBtn = document.createElement('span');
+      editBtn.className = 'pd-edit';
+      editBtn.textContent = '✏️';
+      editBtn.title = '训练/编辑';
+      editBtn.onclick = (e) => { e.stopPropagation(); closePersonaDropdown(); openTrainModal(c.id); };
+
+      item.appendChild(emojiSpan);
+      item.appendChild(info);
+      item.appendChild(editBtn);
+      item.onclick = () => { switchCharacter(c.id); closePersonaDropdown(); };
+      dd.appendChild(item);
+    });
+
+    // 分隔线 + 新建
+    const sep = document.createElement('div');
+    sep.className = 'persona-dropdown-sep';
+    dd.appendChild(sep);
+
+    const addItem = document.createElement('div');
+    addItem.className = 'persona-dropdown-add';
+    addItem.innerHTML = '<span>＋</span><span>新建人格</span>';
+    addItem.onclick = () => { closePersonaDropdown(); openTrainModal(null); };
+    dd.appendChild(addItem);
+  }
+
+  function togglePersonaDropdown() {
+    const dd = document.getElementById('personaDropdown');
+    const btn = document.getElementById('headerBadgeBtn');
+    if (!dd) return;
+    const isOpen = dd.classList.contains('open');
+    if (isOpen) {
+      closePersonaDropdown();
+    } else {
+      renderPersonaDropdown();
+      dd.classList.add('open');
+      btn.classList.add('open');
+    }
+  }
+
+  function closePersonaDropdown() {
+    const dd = document.getElementById('personaDropdown');
+    const btn = document.getElementById('headerBadgeBtn');
+    if (dd) dd.classList.remove('open');
+    if (btn) btn.classList.remove('open');
+  }
+
+  // 点击外部关闭下拉
+  document.addEventListener('click', (e) => {
+    const badge = document.querySelector('.header-badge');
+    if (badge && !badge.contains(e.target)) closePersonaDropdown();
+  });
 
   function newChatWithChar(char) {
     saveCurrentSession();
@@ -1505,7 +1654,9 @@
     `;
     messagesEl.appendChild(w);
     welcomeEl = w;
-  } ───────────────────────────────────
+  }
+
+  // ─── LocalStorage 会话管理 ────────────────────────────────────
   const STORAGE_KEY = 'nanda_sessions_v2';
 
   function loadSessions() {
@@ -1960,7 +2111,7 @@
   // ─── 人格训练系统 ──────────────────────────────────────────────
   let trainEditId = null;  // null = 新建，有值 = 编辑
 
-  // 从 localStorage 加载自定义人格到 CHARS
+  // 从 localStorage 加载自定义人格到 CHARS（只在初始化时调用一次）
   function loadCustomPersonasFromStorage() {
     try {
       const raw = localStorage.getItem('custom_personas');
@@ -1973,7 +2124,6 @@
       });
     } catch {}
   }
-  loadCustomPersonasFromStorage();
 
   async function openTrainModal(charId) {
     trainEditId = charId || null;
@@ -2086,6 +2236,7 @@
           localStorage.setItem('custom_personas', JSON.stringify(saved));
         } catch {}
         renderCharList();
+        renderPersonaDropdown();
         closeTrainModal();
       } else {
         alert(data.error || '保存失败');
@@ -2124,6 +2275,7 @@
       updateHeader(getCurrentChar());
     }
     renderCharList();
+    renderPersonaDropdown();
     closeTrainModal();
   }
 
@@ -2457,7 +2609,9 @@
 
   // ─── 初始化 ───────────────────────────────────────────────────
   document.body.setAttribute('data-char', 'muchen');
+  loadCustomPersonasFromStorage();
   renderCharList();
+  renderPersonaDropdown();
   renderHistoryList();
   currentId = 'session_' + Date.now();
 </script>
