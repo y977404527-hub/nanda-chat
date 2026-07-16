@@ -290,6 +290,58 @@
       font-weight: 500;
     }
 
+    /* 群聊活跃角色栏 */
+    .group-bar {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(255,249,246,0.9);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .group-bar::-webkit-scrollbar { display: none; }
+    .group-bar.show { display: flex; }
+    .group-bar-label { font-size: 11px; color: var(--text-sub); white-space: nowrap; }
+    .group-char-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px 4px 6px;
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .group-char-chip:hover { border-color: var(--accent); }
+    .group-char-chip .chip-avatar {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+    }
+    .group-char-chip .chip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .group-char-chip .chip-remove { color: var(--text-sub); margin-left: 3px; font-size: 13px; line-height: 1; }
+    .group-char-chip .chip-remove:hover { color: var(--accent); }
+    /* 群聊消息里的角色名标签 */
+    .msg-char-tag {
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 3px;
+      font-weight: 600;
+      padding-left: 2px;
+    }
+
     /* Messages */
     .messages {
       flex: 1;
@@ -609,6 +661,147 @@
       justify-content: center;
     }
     .draw-modal.open { display: flex; }
+
+    /* ─── 人格训练弹窗 ─── */
+    .train-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      background: rgba(20,10,15,0.55);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+    }
+    .train-modal.open { display: flex; }
+    .train-panel {
+      background: var(--bg2, #fff9f6);
+      border-radius: 22px;
+      padding: 24px 22px 20px;
+      width: min(96vw, 580px);
+      max-height: 92dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .train-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .train-panel-title { font-size: 17px; font-weight: 700; color: var(--text); }
+    .train-close-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--text-sub);
+    }
+    .train-field { margin-bottom: 14px; }
+    .train-label { font-size: 12px; color: var(--text-sub); margin-bottom: 5px; font-weight: 500; }
+    .train-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .train-input {
+      width: 100%; box-sizing: border-box;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .train-input:focus { border-color: var(--accent); }
+    .train-textarea {
+      width: 100%; box-sizing: border-box;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color 0.15s;
+    }
+    .train-textarea:focus { border-color: var(--accent); }
+    .train-prompt-area { min-height: 180px; }
+    .train-hint {
+      font-size: 11.5px; color: var(--text-sub);
+      background: var(--bg3); border-radius: 8px;
+      padding: 8px 12px; margin-bottom: 12px; line-height: 1.7;
+    }
+    .train-btn-row { display: flex; gap: 8px; margin-top: 6px; }
+    .train-gen-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px; cursor: pointer;
+      color: var(--text); font-family: inherit;
+      transition: all 0.15s;
+    }
+    .train-gen-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .train-save-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      font-size: 13px; cursor: pointer;
+      color: #fff; font-family: inherit; font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .train-save-btn:hover { opacity: 0.88; }
+    .train-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .train-delete-btn {
+      padding: 10px 14px;
+      background: transparent;
+      border: 1.5px solid #e07070;
+      border-radius: 10px;
+      font-size: 13px; cursor: pointer;
+      color: #e07070; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .train-delete-btn:hover { background: #fff0f0; }
+    /* 编辑按钮 */
+    .char-item .char-edit-btn {
+      opacity: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--text-sub);
+      transition: all 0.15s;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .char-item:hover .char-edit-btn { opacity: 1; }
+    .char-edit-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    /* 新建人格按钮 */
+    .new-persona-btn {
+      margin: 8px 10px 10px;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+      cursor: pointer;
+      width: calc(100% - 20px);
+      text-align: center;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .new-persona-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow, rgba(201,116,138,0.08)); }
     .draw-panel {
       background: #fff9f6;
       border-radius: 20px;
@@ -817,6 +1010,63 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <!-- 你画我猜 弹窗 -->
+<!-- 人格训练弹窗 -->
+<div class="train-modal" id="trainModal">
+  <div class="train-panel">
+    <div class="train-panel-header">
+      <div class="train-panel-title" id="trainModalTitle">✏️ 训练人格</div>
+      <button class="train-close-btn" onclick="closeTrainModal()">✕</button>
+    </div>
+
+    <div class="train-hint">
+      💡 描述这个人的气质、说话方式和你希望他/她做的事，AI 会帮你生成 Prompt；也可以直接手写。
+    </div>
+
+    <div class="train-row2">
+      <div class="train-field">
+        <div class="train-label">名字 *</div>
+        <input class="train-input" id="trainName" placeholder="如：暮光" maxlength="8" />
+      </div>
+      <div class="train-field">
+        <div class="train-label">标签（8字内）</div>
+        <input class="train-input" id="trainTag" placeholder="如：清冷学霸" maxlength="8" />
+      </div>
+    </div>
+
+    <div class="train-row2">
+      <div class="train-field">
+        <div class="train-label">Emoji 图标</div>
+        <input class="train-input" id="trainEmoji" placeholder="🌙" maxlength="4" style="font-size:18px;text-align:center" />
+      </div>
+      <div class="train-field">
+        <div class="train-label">ID（英文，不填自动生成）</div>
+        <input class="train-input" id="trainId" placeholder="如：muguang" maxlength="20" />
+      </div>
+    </div>
+
+    <div class="train-field">
+      <div class="train-label">自我介绍（一句话，对话时显示）</div>
+      <input class="train-input" id="trainIntro" placeholder="如：清醒的人往往是最孤独的……" maxlength="50" />
+    </div>
+
+    <div class="train-field">
+      <div class="train-label">用自然语言描述角色（AI 用来生成 Prompt）</div>
+      <textarea class="train-textarea" id="trainDesc" placeholder="例如：他是个清冷的物理系学长，说话简练，不喜欢废话，偶尔会说一句让人愣住的话。他对感情很迟钝，但一旦在意就会非常细致……"></textarea>
+    </div>
+
+    <div class="train-field">
+      <div class="train-label">人格 Prompt（直接决定 AI 行为，可手动编辑）</div>
+      <textarea class="train-textarea train-prompt-area" id="trainPrompt" placeholder="可以先点「AI 帮我生成」，也可以直接在这里写……"></textarea>
+    </div>
+
+    <div class="train-btn-row">
+      <button class="train-gen-btn" id="trainGenBtn" onclick="genPersonaPrompt()">✨ AI 帮我生成</button>
+      <button class="train-save-btn" id="trainSaveBtn" onclick="savePersona()">保存</button>
+      <button class="train-delete-btn" id="trainDeleteBtn" onclick="deletePersona()" style="display:none">删除</button>
+    </div>
+  </div>
+</div>
+
 <div class="draw-modal" id="drawModal">
   <div class="draw-panel">
     <div class="draw-panel-header">
@@ -897,6 +1147,7 @@
     <div class="char-list" id="charList">
       <!-- JS 动态生成 -->
     </div>
+    <button class="new-persona-btn" onclick="openTrainModal(null)">＋ 新建人格</button>
   </div>
   <div class="sidebar-history" id="historyList">
     <div class="sidebar-empty">还没有聊天记录<br/>发消息后自动保存</div>
@@ -920,6 +1171,12 @@
       </div>
     </div>
     <div class="header-badge">✦ 温柔男大</div>
+  </div>
+
+  <!-- 群聊活跃角色栏 -->
+  <div class="group-bar" id="groupBar">
+    <span class="group-bar-label">当前群聊：</span>
+    <div id="groupChips"></div>
   </div>
 
   <div class="messages" id="messages">
@@ -1009,7 +1266,7 @@
 
   // ─── 角色配置（前端镜像） ─────────────────────────────────────
   const CHARS = [
-    { id: 'muchen',   name: '沐辰',   tag: '温柔文学男大',   intro: '嗯……有什么想说的，跟我说就好。',               avatar: '/avatar.jpg',  emoji: '🌙' },
+    { id: 'muchen',   name: '沐辰',   tag: '温柔文学',   intro: '嗯……有什么想说的，跟我说就好。',               avatar: '/avatar.jpg',  emoji: '🌙' },
     { id: 'luyan',    name: '陆言',   tag: '侦探·恐怖故事',  intro: '你敢听吗——有些故事，听完之后你会后悔今晚一个人。', avatar: '',             emoji: '🕵️' },
     { id: 'gushen',   name: '顾深',   tag: '理性科技派',    intro: '用数据说话——情绪是噪声，逻辑才是答案。',           avatar: '',             emoji: '🔬' },
     { id: 'linye',    name: '林野',   tag: '生物自然学',    intro: '你知道吗，每一棵树都在用根互相说话，只是我们听不懂。', avatar: '',            emoji: '🌿' },
@@ -1020,9 +1277,95 @@
   ];
 
   let currentCharId = 'muchen';
+  let activeChars = ['muchen'];  // 群聊中的所有角色
 
   function getCurrentChar() {
     return CHARS.find(c => c.id === currentCharId) || CHARS[0];
+  }
+  function getCharById(id) {
+    return CHARS.find(c => c.id === id) || CHARS[0];
+  }
+
+  // ─── 群聊管理 ────────────────────────────────────────────────
+  function addCharToGroup(charId) {
+    if (activeChars.includes(charId)) return;
+    activeChars.push(charId);
+    renderGroupBar();
+    // 系统消息提示
+    const char = getCharById(charId);
+    const sysRow = document.createElement('div');
+    sysRow.style.cssText = 'text-align:center;font-size:12px;color:var(--text-sub);padding:4px 0;';
+    sysRow.textContent = `— ${char.name} 加入了对话 —`;
+    messagesEl.appendChild(sysRow);
+    scrollToBottom();
+  }
+
+  function removeCharFromGroup(charId) {
+    if (activeChars.length <= 1) return;
+    activeChars = activeChars.filter(id => id !== charId);
+    if (!activeChars.includes(currentCharId)) {
+      currentCharId = activeChars[0];
+      document.body.setAttribute('data-char', currentCharId);
+      updateHeader(getCurrentChar());
+    }
+    renderGroupBar();
+    const char = getCharById(charId);
+    const sysRow = document.createElement('div');
+    sysRow.style.cssText = 'text-align:center;font-size:12px;color:var(--text-sub);padding:4px 0;';
+    sysRow.textContent = `— ${char.name} 离开了对话 —`;
+    messagesEl.appendChild(sysRow);
+    scrollToBottom();
+  }
+
+  function renderGroupBar() {
+    const bar = document.getElementById('groupBar');
+    const chips = document.getElementById('groupChips');
+    chips.innerHTML = '';
+    if (activeChars.length <= 1) {
+      bar.classList.remove('show');
+      return;
+    }
+    bar.classList.add('show');
+    activeChars.forEach(id => {
+      const char = getCharById(id);
+      const chip = document.createElement('div');
+      chip.className = 'group-char-chip';
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'chip-avatar';
+      if (char.avatar) {
+        const img = document.createElement('img');
+        img.src = char.avatar;
+        img.onerror = () => { avatarDiv.textContent = char.emoji; };
+        avatarDiv.appendChild(img);
+      } else {
+        avatarDiv.textContent = char.emoji;
+      }
+      chip.appendChild(avatarDiv);
+      chip.appendChild(document.createTextNode(char.name));
+      const rm = document.createElement('span');
+      rm.className = 'chip-remove';
+      rm.textContent = '×';
+      rm.onclick = (e) => { e.stopPropagation(); removeCharFromGroup(id); };
+      chip.appendChild(rm);
+      chips.appendChild(chip);
+    });
+  }
+
+  // 检测并处理邀请
+  async function detectAndHandleInvite(userMsg) {
+    try {
+      const resp = await fetch('/api/detect-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg, current_chars: activeChars }),
+      });
+      const data = await resp.json();
+      if (data.invited && data.invited.length > 0) {
+        data.invited.forEach(id => addCharToGroup(id));
+        return true;
+      }
+    } catch {}
+    return false;
   }
 
   function renderCharList() {
@@ -1044,13 +1387,22 @@
         avatarDiv.textContent = c.emoji;
       }
 
-      item.innerHTML = `
-        <div class="char-item-info">
-          <div class="char-item-name">${c.name}</div>
-          <div class="char-item-tag">${c.tag}</div>
-        </div>
-      `;
-      item.insertBefore(avatarDiv, item.firstChild);
+      const info = document.createElement('div');
+      info.className = 'char-item-info';
+      info.innerHTML = `<div class="char-item-name">${c.name}</div><div class="char-item-tag">${c.tag}</div>`;
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'char-edit-btn';
+      editBtn.title = '训练 / 编辑';
+      editBtn.textContent = '✏️';
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        openTrainModal(c.id);
+      };
+
+      item.appendChild(avatarDiv);
+      item.appendChild(info);
+      item.appendChild(editBtn);
       list.appendChild(item);
     });
   }
@@ -1343,38 +1695,79 @@
     return div;
   }
 
-  function addMessage(role, text, save = true) {
+  function addMessage(role, text, save = true, charId = null) {
     if (welcomeEl) { welcomeEl.remove(); welcomeEl = null; }
     const row = document.createElement('div');
     row.className = 'msg-row ' + role;
     let avatar;
     if (role === 'ai') {
-      avatar = makeAiAvatar();
+      const char = charId ? getCharById(charId) : getCurrentChar();
+      avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      if (char.avatar) {
+        const img = document.createElement('img');
+        img.src = char.avatar; img.alt = char.name;
+        img.onerror = () => { avatar.textContent = char.emoji; };
+        avatar.appendChild(img);
+      } else {
+        avatar.style.background = 'var(--bg3)';
+        avatar.style.border = '1.5px solid var(--border)';
+        avatar.style.fontSize = '16px';
+        avatar.textContent = char.emoji;
+      }
     } else {
       avatar = document.createElement('div');
       avatar.className = 'msg-avatar';
       avatar.textContent = '🙋';
     }
+    const msgCol = document.createElement('div');
+    msgCol.style.display = 'flex';
+    msgCol.style.flexDirection = 'column';
+    msgCol.style.gap = '2px';
+    msgCol.style.maxWidth = 'calc(100% - 50px)';
+    // 群聊模式下显示角色名
+    if (role === 'ai' && activeChars.length > 1 && charId) {
+      const char = getCharById(charId);
+      const tag = document.createElement('div');
+      tag.className = 'msg-char-tag';
+      tag.textContent = char.name;
+      msgCol.appendChild(tag);
+    }
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
+    bubble.style.maxWidth = '100%';
     bubble.textContent = text;
+    msgCol.appendChild(bubble);
     row.appendChild(avatar);
-    row.appendChild(bubble);
+    row.appendChild(msgCol);
     messagesEl.appendChild(row);
     scrollToBottom();
     return bubble;
   }
 
-  function addTyping(phase) {
+  function addTyping(phase, charId = null) {
     if (welcomeEl) { welcomeEl.remove(); welcomeEl = null; }
     const row = document.createElement('div');
     row.className = 'msg-row ai';
-    row.id = 'typing-row';
-    const avatar = makeAiAvatar();
+    row.id = 'typing-row-' + (charId || 'default');
+    const char = charId ? getCharById(charId) : getCurrentChar();
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    if (char.avatar) {
+      const img = document.createElement('img');
+      img.src = char.avatar; img.alt = char.name;
+      img.onerror = () => { avatar.textContent = char.emoji; avatar.style.fontSize='16px'; };
+      avatar.appendChild(img);
+    } else {
+      avatar.style.background = 'var(--bg3)';
+      avatar.style.border = '1.5px solid var(--border)';
+      avatar.style.fontSize = '16px';
+      avatar.textContent = char.emoji;
+    }
     const bubble = document.createElement('div');
     if (phase === 'thinking') {
       bubble.className = 'bubble think-bar';
-      bubble.innerHTML = '<div class="think-bar-track"><div class="think-bar-fill"></div></div><span class="think-text">沐辰在想…</span>';
+      bubble.innerHTML = `<div class="think-bar-track"><div class="think-bar-fill"></div></div><span class="think-text">${char.name}在想…</span>`;
     } else {
       bubble.className = 'bubble typing';
       bubble.innerHTML = '<span></span><span></span><span></span>';
@@ -1391,7 +1784,6 @@
     const text = inputEl.value.trim();
     if (!text || isStreaming) return;
 
-    // 如果是第一条消息，创建新会话 ID
     if (!currentId) currentId = 'session_' + Date.now();
 
     isStreaming = true;
@@ -1403,80 +1795,160 @@
     addMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
 
-    // 阶段一：思考动效 1.2~2.2s
-    const thinkingRow = addTyping('thinking');
-    await sleep(1200 + Math.random() * 1000);
-    thinkingRow.remove();
+    // 并行检测邀请（不等待结果）
+    detectAndHandleInvite(text);
 
-    // 阶段二：打字点 + fetch
-    const typingRow = addTyping('typing');
+    if (activeChars.length > 1) {
+      // ── 多角色群聊模式 ──
+      await sleep(500 + Math.random() * 500);
+      try {
+        const response = await fetch('/api/chat-multi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: chatHistory, characters: activeChars }),
+        });
+        if (!response.ok) throw new Error('请求失败');
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatHistory, character: currentCharId }),
-      });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let curBubble = null;
+        let curCharText = '';
+        let curCharIdStream = null;
+        let cQueue = [];
+        let cRendering = false;
+        let cTypRow = null;
 
-      if (!response.ok) throw new Error('请求失败');
-
-      typingRow.remove();
-      const bubble = addMessage('ai', '');
-      let aiText = '';
-      let charQueue = [];
-      let rendering = false;
-
-      async function renderQueue() {
-        if (rendering) return;
-        rendering = true;
-        while (charQueue.length > 0) {
-          const ch = charQueue.shift();
-          aiText += ch;
-          bubble.textContent = aiText;
-          scrollToBottom();
-          const isPunct = '，。！？…、'.includes(ch);
-          await sleep(isPunct ? 80 + Math.random() * 120 : 20 + Math.random() * 30);
+        async function renderCQ() {
+          if (cRendering) return;
+          cRendering = true;
+          while (cQueue.length > 0) {
+            const ch = cQueue.shift();
+            curCharText += ch;
+            if (curBubble) curBubble.textContent = curCharText;
+            scrollToBottom();
+            const isPunct = '，。！？…、'.includes(ch);
+            await sleep(isPunct ? 70 + Math.random() * 100 : 18 + Math.random() * 25);
+          }
+          cRendering = false;
         }
-        rendering = false;
-      }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') break;
-          try {
-            const parsed = JSON.parse(raw);
-            if (parsed.error) { bubble.textContent = parsed.error; break; }
-            if (parsed.content) {
-              for (const ch of parsed.content) charQueue.push(ch);
-              renderQueue();
-            }
-          } catch {}
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed.char_start) {
+                curCharIdStream = parsed.char_start;
+                curCharText = '';
+                cQueue = [];
+                if (cTypRow) { cTypRow.remove(); cTypRow = null; }
+                cTypRow = addTyping('typing', curCharIdStream);
+                await sleep(300);
+                if (cTypRow) { cTypRow.remove(); cTypRow = null; }
+                curBubble = addMessage('ai', '', false, curCharIdStream);
+              } else if (parsed.char_end) {
+                while (cQueue.length > 0 || cRendering) await sleep(50);
+                if (curCharText) chatHistory.push({ role: 'assistant', content: `[${parsed.char_end}] ${curCharText}` });
+                curBubble = null;
+                await sleep(200);
+              } else if (parsed.content && curBubble) {
+                for (const ch of parsed.content) cQueue.push(ch);
+                renderCQ();
+              }
+            } catch {}
+          }
         }
+
+        while (cQueue.length > 0 || cRendering) await sleep(50);
+        saveCurrentSession();
+        fetchSuggestions(chatHistory);
+
+      } catch (err) {
+        addMessage('ai', '群聊出了点问题，稍等再试？');
+        console.error(err);
       }
 
-      while (charQueue.length > 0 || rendering) await sleep(50);
+    } else {
+      // ── 单角色模式 ──
+      const thinkingRow = addTyping('thinking', currentCharId);
+      await sleep(1200 + Math.random() * 1000);
+      thinkingRow.remove();
+      const typingRow = addTyping('typing', currentCharId);
 
-      if (aiText) {
-        chatHistory.push({ role: 'assistant', content: aiText });
-        saveCurrentSession();           // 存到 localStorage
-        fetchSuggestions(chatHistory);  // 获取回复建议
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: chatHistory, character: currentCharId }),
+        });
+        if (!response.ok) throw new Error('请求失败');
+
+        typingRow.remove();
+        const bubble = addMessage('ai', '', false, currentCharId);
+        let aiText = '';
+        let charQueue = [];
+        let rendering = false;
+
+        async function renderQueue() {
+          if (rendering) return;
+          rendering = true;
+          while (charQueue.length > 0) {
+            const ch = charQueue.shift();
+            aiText += ch;
+            bubble.textContent = aiText;
+            scrollToBottom();
+            const isPunct = '，。！？…、'.includes(ch);
+            await sleep(isPunct ? 80 + Math.random() * 120 : 20 + Math.random() * 30);
+          }
+          rendering = false;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed.error) { bubble.textContent = parsed.error; break; }
+              if (parsed.content) {
+                for (const ch of parsed.content) charQueue.push(ch);
+                renderQueue();
+              }
+            } catch {}
+          }
+        }
+
+        while (charQueue.length > 0 || rendering) await sleep(50);
+
+        if (aiText) {
+          chatHistory.push({ role: 'assistant', content: aiText });
+          saveCurrentSession();
+          fetchSuggestions(chatHistory);
+        }
+
+      } catch (err) {
+        typingRow.remove();
+        addMessage('ai', '好像网络有点问题，稍等一下再试试？');
+        console.error(err);
       }
-
-    } catch (err) {
-      typingRow.remove();
-      addMessage('ai', '好像网络有点问题，稍等一下再试试？');
-      console.error(err);
     }
 
     isStreaming = false;
@@ -1485,6 +1957,176 @@
   }
 
   // ─── 你画我猜 ─────────────────────────────────────────────────
+  // ─── 人格训练系统 ──────────────────────────────────────────────
+  let trainEditId = null;  // null = 新建，有值 = 编辑
+
+  // 从 localStorage 加载自定义人格到 CHARS
+  function loadCustomPersonasFromStorage() {
+    try {
+      const raw = localStorage.getItem('custom_personas');
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      Object.keys(saved).forEach(id => {
+        if (!CHARS.find(c => c.id === id)) {
+          CHARS.push({ ...saved[id], id });
+        }
+      });
+    } catch {}
+  }
+  loadCustomPersonasFromStorage();
+
+  async function openTrainModal(charId) {
+    trainEditId = charId || null;
+    const charMeta = charId ? (CHARS.find(c => c.id === charId) || null) : null;
+    document.getElementById('trainModalTitle').textContent = charId ? `✏️ 编辑 ${charMeta?.name || ''}` : '✨ 新建人格';
+    document.getElementById('trainName').value = charMeta?.name || '';
+    document.getElementById('trainTag').value = charMeta?.tag || '';
+    document.getElementById('trainIntro').value = charMeta?.intro || '';
+    document.getElementById('trainEmoji').value = charMeta?.emoji || '';
+    document.getElementById('trainId').value = charId || '';
+    document.getElementById('trainDesc').value = '';
+    document.getElementById('trainPrompt').value = charMeta?.prompt || '';
+
+    // 如果有 charId，异步加载完整 prompt（可能比 CHARS 里更新）
+    if (charId) {
+      try {
+        const resp = await fetch('/api/persona/list');
+        const data = await resp.json();
+        const found = data.personas.find(p => p.id === charId);
+        if (found && found.prompt) {
+          document.getElementById('trainPrompt').value = found.prompt;
+        }
+      } catch {}
+    }
+
+    const builtins = ['muchen','luyan','gushen','linye','xingchen','nanfeng','jiangmo','hebai'];
+    document.getElementById('trainDeleteBtn').style.display = (charId && !builtins.includes(charId)) ? '' : 'none';
+    document.getElementById('trainModal').classList.add('open');
+  }
+
+  function closeTrainModal() {
+    document.getElementById('trainModal').classList.remove('open');
+    trainEditId = null;
+  }
+
+  async function genPersonaPrompt() {
+    const name = document.getElementById('trainName').value.trim();
+    const tag = document.getElementById('trainTag').value.trim();
+    const intro = document.getElementById('trainIntro').value.trim();
+    const desc = document.getElementById('trainDesc').value.trim();
+    if (!desc) {
+      document.getElementById('trainDesc').focus();
+      document.getElementById('trainDesc').placeholder = '请先填写角色描述，AI 才能生成 Prompt';
+      return;
+    }
+    const btn = document.getElementById('trainGenBtn');
+    btn.textContent = '生成中…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch('/api/persona/gen-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tag, intro, description: desc }),
+      });
+      const data = await resp.json();
+      if (data.ok && data.prompt) {
+        document.getElementById('trainPrompt').value = data.prompt;
+      } else {
+        alert(data.error || '生成失败，请重试');
+      }
+    } catch {
+      alert('网络错误，请重试');
+    }
+    btn.textContent = '✨ AI 帮我生成';
+    btn.disabled = false;
+  }
+
+  async function savePersona() {
+    const name = document.getElementById('trainName').value.trim();
+    const tag = document.getElementById('trainTag').value.trim();
+    const intro = document.getElementById('trainIntro').value.trim();
+    const emoji = document.getElementById('trainEmoji').value.trim() || '🤖';
+    const prompt = document.getElementById('trainPrompt').value.trim();
+    let id = document.getElementById('trainId').value.trim();
+
+    if (!name) { document.getElementById('trainName').focus(); return; }
+    if (!prompt) { document.getElementById('trainPrompt').focus(); return; }
+
+    // 生成 ID
+    if (!id) {
+      id = 'custom_' + Date.now();
+    }
+    id = id.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+
+    const btn = document.getElementById('trainSaveBtn');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+
+    try {
+      const resp = await fetch('/api/persona/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, tag, intro, emoji, prompt }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        // 同步到前端 CHARS
+        const idx = CHARS.findIndex(c => c.id === id);
+        const newChar = { id, name, tag, intro, emoji, prompt, avatar: '' };
+        if (idx >= 0) {
+          CHARS[idx] = newChar;
+        } else {
+          CHARS.push(newChar);
+        }
+        // 备份到 localStorage
+        try {
+          const raw = localStorage.getItem('custom_personas') || '{}';
+          const saved = JSON.parse(raw);
+          saved[id] = { name, tag, intro, emoji, prompt, avatar: '' };
+          localStorage.setItem('custom_personas', JSON.stringify(saved));
+        } catch {}
+        renderCharList();
+        closeTrainModal();
+      } else {
+        alert(data.error || '保存失败');
+      }
+    } catch {
+      alert('网络错误，请重试');
+    }
+    btn.disabled = false;
+    btn.textContent = '保存';
+  }
+
+  async function deletePersona() {
+    if (!trainEditId) return;
+    const char = CHARS.find(c => c.id === trainEditId);
+    if (!confirm(`确认删除「${char?.name || trainEditId}」？`)) return;
+    try {
+      await fetch('/api/persona/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: trainEditId }),
+      });
+    } catch {}
+    // 从前端移除
+    const idx = CHARS.findIndex(c => c.id === trainEditId);
+    if (idx >= 0) CHARS.splice(idx, 1);
+    try {
+      const raw = localStorage.getItem('custom_personas') || '{}';
+      const saved = JSON.parse(raw);
+      delete saved[trainEditId];
+      localStorage.setItem('custom_personas', JSON.stringify(saved));
+    } catch {}
+    if (currentCharId === trainEditId) {
+      currentCharId = 'muchen';
+      activeChars = ['muchen'];
+      document.body.setAttribute('data-char', 'muchen');
+      updateHeader(getCurrentChar());
+    }
+    renderCharList();
+    closeTrainModal();
+  }
+
   let drawCanvas, drawCtx;
   let isPainting = false;
   let currentColor = '#2d2d2d';
