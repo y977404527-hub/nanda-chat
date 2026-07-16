@@ -1989,8 +1989,10 @@
     addMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
 
-    // 并行检测邀请（不等待结果）
-    detectAndHandleInvite(text);
+    // 检测邀请（只在单角色时检测，且等完再决定走哪个分支）
+    if (activeChars.length === 1) {
+      await detectAndHandleInvite(text);
+    }
 
     if (activeChars.length > 1) {
       // ── 多角色群聊模式 ──
@@ -1999,7 +2001,7 @@
         const response = await fetch('/api/chat-multi', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: chatHistory, characters: activeChars }),
+          body: JSON.stringify({ messages: chatHistory, characters: [...activeChars] }),
         });
         if (!response.ok) throw new Error('请求失败');
 
@@ -2012,6 +2014,7 @@
         let cQueue = [];
         let cRendering = false;
         let cTypRow = null;
+        let multiDone = false;
 
         async function renderCQ() {
           if (cRendering) return;
@@ -2027,7 +2030,7 @@
           cRendering = false;
         }
 
-        while (true) {
+        while (!multiDone) {
           const { done, value } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
@@ -2036,7 +2039,7 @@
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const raw = line.slice(6).trim();
-            if (raw === '[DONE]') break;
+            if (raw === '[DONE]') { multiDone = true; break; }
             try {
               const parsed = JSON.parse(raw);
               if (parsed.char_start) {
@@ -2052,6 +2055,7 @@
                 while (cQueue.length > 0 || cRendering) await sleep(50);
                 if (curCharText) chatHistory.push({ role: 'assistant', content: `[${parsed.char_end}] ${curCharText}` });
                 curBubble = null;
+                curCharText = '';
                 await sleep(200);
               } else if (parsed.content && curBubble) {
                 for (const ch of parsed.content) cQueue.push(ch);
